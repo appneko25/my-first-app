@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ねこのおみくじ</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --pink: #ff8fab;
+    --pink-dark: #f76d96;
+    --cream: #fff7f0;
+    --ink: #5a4a52;
+  }
+  body {
+    font-family: "Hiragino Maru Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
+    background: linear-gradient(160deg, #ffe5ec 0%, #ffc2d4 45%, #ffb3c6 100%);
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+    color: var(--ink);
+    overflow-x: hidden;
+  }
+  .deco {
+    position: fixed;
+    font-size: 22px;
+    opacity: .55;
+    animation: floaty 5s ease-in-out infinite;
+    pointer-events: none;
+    user-select: none;
+  }
+  @keyframes floaty {
+    0%, 100% { transform: translateY(0) rotate(-6deg); }
+    50% { transform: translateY(-14px) rotate(6deg); }
+  }
+  .card {
+    background: var(--cream);
+    width: 100%;
+    max-width: 420px;
+    border-radius: 28px;
+    padding: 32px 24px 28px;
+    text-align: center;
+    box-shadow: 0 18px 40px rgba(214, 90, 130, .28), inset 0 0 0 3px #ffd6e3;
+    position: relative;
+    z-index: 1;
+  }
+  h1 {
+    font-size: clamp(26px, 7vw, 32px);
+    letter-spacing: .06em;
+    color: var(--pink-dark);
+    margin-bottom: 6px;
+  }
+  .sub { font-size: 14px; color: #a07c8c; margin-bottom: 20px; }
+  .box-stage { height: 150px; display: flex; align-items: flex-start; justify-content: center; }
+  .omikuji-box {
+    font-size: 96px;
+    line-height: 1;
+    display: inline-block;
+    filter: drop-shadow(0 8px 10px rgba(214, 90, 130, .25));
+  }
+  .shaking { animation: shake .12s linear infinite; }
+  @keyframes shake {
+    0% { transform: rotate(0deg) translateX(0); }
+    25% { transform: rotate(-7deg) translateX(-5px); }
+    50% { transform: rotate(0deg) translateX(0); }
+    75% { transform: rotate(7deg) translateX(5px); }
+    100% { transform: rotate(0deg) translateX(0); }
+  }
+  .stick {
+    font-size: 84px;
+    line-height: 1;
+    display: none;
+    animation: pop .45s cubic-bezier(.2, 1.6, .4, 1);
+  }
+  @keyframes pop {
+    0% { transform: scale(.3) translateY(30px); opacity: 0; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+  }
+  button {
+    font-family: inherit;
+    font-size: 19px;
+    font-weight: bold;
+    color: #fff;
+    background: linear-gradient(180deg, var(--pink), var(--pink-dark));
+    border: none;
+    border-radius: 999px;
+    padding: 15px 38px;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #d14f78, 0 12px 20px rgba(214, 90, 130, .3);
+    transition: transform .08s, box-shadow .08s, opacity .2s;
+    width: 100%;
+    max-width: 300px;
+  }
+  button:active { transform: translateY(4px); box-shadow: 0 2px 0 #d14f78, 0 6px 12px rgba(214, 90, 130, .3); }
+  button:disabled { opacity: .55; cursor: default; }
+  .result {
+    display: none;
+    margin-top: 24px;
+    background: #fff;
+    border: 2px dashed var(--pink);
+    border-radius: 20px;
+    padding: 20px 16px;
+    animation: pop .45s cubic-bezier(.2, 1.6, .4, 1);
+  }
+  .fortune {
+    font-size: clamp(44px, 13vw, 56px);
+    font-weight: bold;
+    color: var(--pink-dark);
+    letter-spacing: .15em;
+    margin: 2px 0 8px;
+  }
+  .message { font-size: 15px; line-height: 1.7; margin-bottom: 14px; }
+  .lucky {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    font-size: 13.5px;
+  }
+  .lucky span {
+    background: #ffe5ec;
+    border-radius: 999px;
+    padding: 7px 14px;
+  }
+  .again { margin-top: 16px; font-size: 13px; color: #a07c8c; }
+  footer { margin-top: 18px; font-size: 12px; color: #bb93a3; }
+</style>
+</head>
+<body>
+  <span class="deco" style="top:6%; left:8%;">🌸</span>
+  <span class="deco" style="top:12%; right:10%; animation-delay:1s;">✨</span>
+  <span class="deco" style="bottom:10%; left:12%; animation-delay:2s;">🎀</span>
+  <span class="deco" style="bottom:16%; right:8%; animation-delay:.5s;">🌸</span>
+
+  <main class="card">
+    <h1>🐱 ねこのおみくじ</h1>
+    <p class="sub">今日の運勢を占ってみよう♪</p>
+
+    <div class="box-stage">
+      <div class="omikuji-box" id="box">🧧</div>
+      <div class="stick" id="stick">🥢</div>
+    </div>
+
+    <button id="drawBtn" type="button">おみくじを引く</button>
+
+    <section class="result" id="result" aria-live="polite">
+      <div style="font-size:14px; color:#a07c8c;">今日の運勢は…</div>
+      <div class="fortune" id="fortune"></div>
+      <p class="message" id="message"></p>
+      <div class="lucky">
+        <span id="luckyColor"></span>
+        <span id="luckyItem"></span>
+      </div>
+      <p class="again">もう一度引きたいときは、上のボタンを押してね</p>
+    </section>
+
+    <footer>🍀 すてきな一日になりますように 🍀</footer>
+  </main>
+
+<script>
+  const fortunes = [
+    { name: "大吉", weight: 12, messages: [
+      "何をしても上手くいく最高の一日！思い切って挑戦してみて。",
+      "嬉しいサプライズが待っているかも。笑顔で過ごそう♪" ] },
+    { name: "中吉", weight: 20, messages: [
+      "良いことが少しずつ集まってくる日。焦らずマイペースに。",
+      "誰かの優しさにほっこりできそう。感謝を伝えてみて。" ] },
+    { name: "小吉", weight: 22, messages: [
+      "小さな幸せが見つかる日。足元をよく見てみて。",
+      "温かい飲み物でひと息つくと、運気アップ！" ] },
+    { name: "吉", weight: 22, messages: [
+      "穏やかで安定した一日。いつもの丁寧さが実を結びます。",
+      "後回しにしていたことに手をつけると◎" ] },
+    { name: "末吉", weight: 16, messages: [
+      "後半から運気が上向きに。午前中は慎重に過ごそう。",
+      "忘れ物に注意。でも、きっと良い日になります。" ] },
+    { name: "凶", weight: 8, messages: [
+      "今日は無理せず、のんびりが一番。明日に備えて早めに休もう。",
+      "深呼吸してリラックス。悪い日も、明日の運気の貯金だよ。" ] }
+  ];
+  const colors = ["さくらピンク", "ミントグリーン", "そらいろ", "レモンイエロー", "ラベンダー", "まっしろ", "コーラルオレンジ", "あずき色"];
+  const items = ["ハンカチ", "お気に入りのペン", "リップクリーム", "小さなぬいぐるみ", "イヤホン", "メモ帳", "ヘアゴム", "キャンディ", "マグカップ", "しおり"];
+
+  const btn = document.getElementById("drawBtn");
+  const box = document.getElementById("box");
+  const stick = document.getElementById("stick");
+  const result = document.getElementById("result");
+
+  function pickFortune() {
+    const total = fortunes.reduce((s, f) => s + f.weight, 0);
+    let r = Math.random() * total;
+    for (const f of fortunes) { if ((r -= f.weight) < 0) return f; }
+    return fortunes[fortunes.length - 1];
+  }
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+  btn.addEventListener("click", () => {
+    btn.disabled = true;
+    result.style.display = "none";
+    stick.style.display = "none";
+    box.style.display = "inline-block";
+    box.classList.add("shaking");
+    setTimeout(() => {
+      box.classList.remove("shaking");
+      box.style.display = "none";
+      stick.style.display = "inline-block";
+      const f = pickFortune();
+      document.getElementById("fortune").textContent = f.name;
+      document.getElementById("message").textContent = pick(f.messages);
+      document.getElementById("luckyColor").textContent = "🎨 ラッキーカラー：" + pick(colors);
+      document.getElementById("luckyItem").textContent = "🔑 ラッキーアイテム：" + pick(items);
+      result.style.display = "block";
+      btn.textContent = "もう一度引く";
+      btn.disabled = false;
+    }, 900);
+  });
+</script>
+</body>
+</html>
